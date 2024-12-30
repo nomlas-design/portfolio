@@ -41,7 +41,11 @@ const Scene = () => {
 
         {/* <OrbitControls /> */}
         <EffectComposer>
-          <Noise premultiply />
+          <Noise
+            premultiply
+            blendFunction={BlendFunction.MULTIPLY}
+            opacity={0.5}
+          />
         </EffectComposer>
         <ambientLight intensity={0.5} />
 
