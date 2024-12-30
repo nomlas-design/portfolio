@@ -19,7 +19,6 @@ import {
 import { BlendFunction, BlurPass, Resizer, KernelSize } from 'postprocessing';
 
 import Carousel from './Carousel';
-import Underlay from './Underlay';
 
 const Scene = () => {
   return (
@@ -47,13 +46,6 @@ const Scene = () => {
             opacity={0.5}
           />
         </EffectComposer>
-        <ambientLight intensity={0.5} />
-
-        {/* Add Directional Light */}
-        <directionalLight position={[5, 5, 5]} intensity={1} />
-
-        {/* Optionally, add a Point Light for more dynamic lighting */}
-        <pointLight position={[-5, -5, -5]} intensity={0.5} />
       </Canvas>
     </div>
   );
