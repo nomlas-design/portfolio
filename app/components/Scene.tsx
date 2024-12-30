@@ -40,17 +40,9 @@ const Scene = () => {
         <Carousel />
 
         {/* <OrbitControls /> */}
-        {/* <EffectComposer>
-          <ToneMapping
-            blendFunction={BlendFunction.SOFT_LIGHT} // blend mode
-            adaptive={true} // toggle adaptive luminance map usage
-            resolution={256} // texture resolution of the luminance map
-            middleGrey={0.6} // middle grey factor
-            maxLuminance={0.5} // maximum luminance
-            averageLuminance={1.0} // average luminance
-            adaptationRate={1.0} // luminance adaptation rate
-          />
-        </EffectComposer> */}
+        <EffectComposer>
+          <Noise premultiply />
+        </EffectComposer>
         <ambientLight intensity={0.5} />
 
         {/* Add Directional Light */}

@@ -143,7 +143,8 @@ const CarouselImage = ({
   }, [texture, materialRef]);
 
   // Easing function for smooth transitions
-  const easeInOut = (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
+  const easeInOut = (t: number): number =>
+    t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
   // Update shader uniforms with interpolated values
   useFrame((state, delta) => {
