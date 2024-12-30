@@ -51,7 +51,12 @@ const CarouselImage = ({
   const mouse = useRef(new Vector2());
 
   // Handle pointer movements to set target mouse position using Raycaster
-  const handlePointerMove = (event) => {
+  interface PointerMoveEvent extends MouseEvent {
+    clientX: number;
+    clientY: number;
+  }
+
+  const handlePointerMove = (event: PointerMoveEvent) => {
     if (index !== activeIndex) return;
 
     // Calculate normalized device coordinates (-1 to +1) for both components
@@ -63,7 +68,7 @@ const CarouselImage = ({
 
     // Calculate objects intersected by the ray
     const intersects = raycaster.current.intersectObject(
-      groupRef.current,
+      groupRef.current as THREE.Object3D,
       true
     );
 
