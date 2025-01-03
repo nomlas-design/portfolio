@@ -19,10 +19,8 @@ interface CarouselImageProps {
   materialRef: (ref: ShaderMaterial | null) => void;
   curveFactor: number;
   activeIndex: number;
+  bendIntensity?: number;
 }
-
-const MAX_ROTATE_X = 0.1; // Approximately 5.7 degrees
-const MAX_ROTATE_Y = 0.1; // Approximately 5.7 degrees
 
 const CarouselImage = ({
   image,
@@ -31,6 +29,7 @@ const CarouselImage = ({
   curveFactor,
   index,
   activeIndex,
+  bendIntensity = 1.15,
 }: CarouselImageProps) => {
   const groupRef = useRef<Group>(null);
   const localMaterialRef = useRef<ShaderMaterial>(null);
@@ -43,14 +42,14 @@ const CarouselImage = ({
   // Current states that will be interpolated
   const currentHover = useRef(0.0);
   const currentMousePos = useRef(new Vector2(0, 0));
-  const currentRotateX = useRef(0.0); // Current rotation around X-axis
-  const currentRotateY = useRef(0.0); // Current rotation around Y-axis
+  const currentRotateX = useRef(0.0);
+  const currentRotateY = useRef(0.0);
 
   const { size, camera } = useThree();
   const raycaster = useRef(new Raycaster());
   const mouse = useRef(new Vector2());
+  const hoverPlane = useRef<THREE.Mesh>(null);
 
-  // Handle pointer movements to set target mouse position using Raycaster
   interface PointerMoveEvent extends MouseEvent {
     clientX: number;
     clientY: number;
@@ -59,45 +58,51 @@ const CarouselImage = ({
   const handlePointerMove = (event: PointerMoveEvent) => {
     if (index !== activeIndex) return;
 
-    // Calculate normalized device coordinates (-1 to +1) for both components
     mouse.current.x = (event.clientX / size.width) * 2 - 1;
     mouse.current.y = -(event.clientY / size.height) * 2 + 1;
 
-    // Update the Raycaster with the camera and mouse position
     raycaster.current.setFromCamera(mouse.current, camera);
 
-    // Calculate objects intersected by the ray
     const intersects = raycaster.current.intersectObject(
-      groupRef.current as THREE.Object3D,
+      hoverPlane.current as THREE.Object3D,
       true
     );
 
     if (intersects.length > 0) {
       const intersect = intersects[0];
-      // Convert intersection point to local coordinates of the plane
-      const localPoint = intersect.object.worldToLocal(intersect.point);
-      setTargetMousePos(new Vector2(localPoint.x, localPoint.y));
-    }
-  };
+      const localPoint = intersect.object.worldToLocal(intersect.point.clone());
 
-  const handlePointerOver = () => {
-    if (index === activeIndex) {
+      const uvX = (localPoint.x / 1.25) * 4;
+      const uvY = (localPoint.y / 1.85) * 8;
+
+      setTargetMousePos(new Vector2(uvX, uvY));
       setTargetHover(1.0);
+      document.body.style.cursor = 'pointer';
+    } else {
+      handlePointerOut();
     }
   };
 
   const handlePointerOut = () => {
     setTargetHover(0.0);
-    setTargetMousePos(new Vector2(0, 0));
+    document.body.style.cursor = 'auto';
+    setTargetMousePos(
+      new Vector2(currentMousePos.current.x, currentMousePos.current.y)
+    );
   };
 
   useEffect(() => {
-    // Attach pointer move event to the mesh
     window.addEventListener('pointermove', handlePointerMove);
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
     };
   }, [activeIndex, index, camera, size]);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = 'auto';
+    };
+  }, []);
 
   const CarouselMaterial = useMemo(() => {
     return shaderMaterial(
@@ -109,10 +114,10 @@ const CarouselImage = ({
         uContrast: 1.0,
         uExposure: 1.0,
         uCurveFactor: 0.0,
-        uMouse: new Vector2(0, 0), // Mouse position
-        uHover: 0.0, // Hover state
-        uRotateX: 0.0, // Rotation around X-axis
-        uRotateY: 0.0, // Rotation around Y-axis
+        uMouse: new Vector2(0, 0),
+        uHover: 0.0,
+        uRotateX: 0.0,
+        uRotateY: 0.0,
       },
       planeVertexShader,
       planeFragmentShader,
@@ -123,7 +128,7 @@ const CarouselImage = ({
         }
       }
     );
-  }, [planeFragmentShader, planeVertexShader]);
+  }, []);
 
   extend({ CarouselMaterial });
 
@@ -142,69 +147,47 @@ const CarouselImage = ({
     return () => materialRef(null);
   }, [texture, materialRef]);
 
-  // Easing function for smooth transitions
-  const easeInOut = (t: number): number =>
-    t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-
-  // Update shader uniforms with interpolated values
   useFrame((state, delta) => {
     if (localMaterialRef.current) {
-      const interpolationSpeed = 5; // Adjust as needed
+      const springStrength = targetHover === 1.0 ? 2.5 : 1.5; // Slower reset
+      const damping = targetHover === 1.0 ? 0.85 : 0.95;
 
-      // Interpolate currentHover towards targetHover with easing
-      currentHover.current = THREE.MathUtils.lerp(
-        currentHover.current,
-        targetHover,
-        easeInOut(interpolationSpeed * delta)
-      );
+      const hoverDiff = targetHover - currentHover.current;
+      currentHover.current += hoverDiff * springStrength * delta;
+      currentHover.current *= damping;
 
-      // Interpolate currentMousePos towards targetMousePos with easing
-      currentMousePos.current.lerp(targetMousePos, interpolationSpeed * delta);
+      const mouseDiffX = targetMousePos.x - currentMousePos.current.x;
+      const mouseDiffY = targetMousePos.y - currentMousePos.current.y;
 
-      // Clamp mouse position within plane bounds (assuming plane size [2.5, 1.7])
-      currentMousePos.current.x = THREE.MathUtils.clamp(
-        currentMousePos.current.x,
-        -1.25,
-        1.25
-      ); // Half of plane width
-      currentMousePos.current.y = THREE.MathUtils.clamp(
-        currentMousePos.current.y,
-        -0.85,
-        0.85
-      ); // Half of plane height
+      currentMousePos.current.x += mouseDiffX * springStrength * delta;
+      currentMousePos.current.y += mouseDiffY * springStrength * delta;
 
-      // Calculate rotation angles based on mouse position
-      const rotateXAngle = (currentMousePos.current.y / 0.85) * MAX_ROTATE_X; // Normalize and scale
-      const rotateYAngle = -(currentMousePos.current.x / 1.25) * MAX_ROTATE_Y; // Negative to rotate in opposite direction
+      currentMousePos.current.multiplyScalar(damping);
 
-      // Interpolate current rotation angles towards target angles
-      currentRotateX.current = THREE.MathUtils.lerp(
-        currentRotateX.current,
-        rotateXAngle,
-        interpolationSpeed * delta
-      );
-      currentRotateY.current = THREE.MathUtils.lerp(
-        currentRotateY.current,
-        rotateYAngle,
-        interpolationSpeed * delta
-      );
-
-      // Update shader uniforms
-      localMaterialRef.current.uniforms.uHover.value = currentHover.current;
-      localMaterialRef.current.uniforms.uMouse.value = currentMousePos.current;
-      localMaterialRef.current.uniforms.uRotateX.value = currentRotateX.current;
-      localMaterialRef.current.uniforms.uRotateY.value = currentRotateY.current;
+      const uniforms = localMaterialRef.current.uniforms;
+      uniforms.uHover.value = currentHover.current;
+      uniforms.uMouse.value.copy(currentMousePos.current);
+      uniforms.uRotateX.value = currentRotateX.current;
+      uniforms.uRotateY.value = currentRotateY.current;
     }
   });
 
   return (
     <group ref={groupRef}>
+      {/* Invisible larger plane for hover detection */}
       <mesh
+        ref={hoverPlane}
         position={pos}
-        onPointerOver={handlePointerOver}
+        visible={false}
+        // onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       >
-        <planeGeometry args={[2.5, 1.7, 30, 30]} />
+        <planeGeometry args={[2.7, 1.9, 1, 1]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      <mesh position={pos}>
+        <planeGeometry args={[2.5, 1.7, 32, 32]} />
         <carouselMaterial ref={localMaterialRef} transparent={true} />
       </mesh>
     </group>
