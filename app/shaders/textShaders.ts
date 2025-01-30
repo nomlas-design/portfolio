@@ -2,6 +2,7 @@
 export const textVertexShader = `
   varying vec2 vUv;
   varying vec3 vWorldPosition;
+  uniform float uTransition;
 
   void main() {
     vUv = uv;
@@ -10,7 +11,10 @@ export const textVertexShader = `
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
 
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 pos = position;
+    pos.x -= uTransition * 3.5;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
 `;
 
@@ -18,6 +22,7 @@ export const textVertexShader = `
 export const textFragmentShader = `
   uniform vec3 uColour;
   uniform float uOpacity;
+  uniform float uTransition;
 
   varying vec2 vUv;
   varying vec3 vWorldPosition;
@@ -27,6 +32,7 @@ export const textFragmentShader = `
       discard;
     }
 
-    gl_FragColor = vec4(uColour, uOpacity);
+    float alpha = uOpacity * (1.0 - uTransition);
+    gl_FragColor = vec4(uColour, alpha);
   }
 `;

@@ -1,8 +1,10 @@
 import { Text, shaderMaterial } from '@react-three/drei';
-import { extend } from '@react-three/fiber';
-import { useRef, useMemo } from 'react';
+import { extend, useFrame } from '@react-three/fiber';
+import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { textFragmentShader, textVertexShader } from '../shaders/textShaders';
+import gsap from 'gsap';
+import { is } from '@react-three/fiber/dist/declarations/src/core/utils';
 
 interface CarouselTextLineProps {
   text: string;
@@ -11,6 +13,11 @@ interface CarouselTextLineProps {
   onWidthComputed: (index: number, width: number) => void;
   opacity: number;
   anchorX: number | 'center' | 'right' | 'left' | undefined;
+  expanded: boolean;
+  duration: number;
+  delay: number;
+  isDirectLoad: boolean;
+  setIsDirectLoad: (value: boolean) => void;
 }
 
 const CarouselTextLine = ({
@@ -20,8 +27,14 @@ const CarouselTextLine = ({
   onWidthComputed,
   opacity,
   anchorX,
+  expanded,
+  duration,
+  delay,
+  isDirectLoad,
+  setIsDirectLoad,
 }: CarouselTextLineProps) => {
   const textRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   const TextMaterial = useMemo(() => {
     return shaderMaterial(
@@ -30,6 +43,8 @@ const CarouselTextLine = ({
         uOpacity: opacity,
         uFadeStart: 2.0,
         uFadeEnd: 4.0,
+        uTransition: 0.0,
+        uTransitionDuration: duration,
       },
       textVertexShader,
       textFragmentShader,
@@ -40,7 +55,7 @@ const CarouselTextLine = ({
         }
       }
     );
-  }, [opacity]);
+  }, [opacity, duration]);
 
   extend({ TextMaterial });
 
@@ -53,22 +68,42 @@ const CarouselTextLine = ({
     }
   };
 
+  useEffect(() => {
+    if (!materialRef.current) return;
+    const uniforms = materialRef.current.uniforms;
+
+    if (isDirectLoad) {
+      uniforms.uTransition.value = expanded ? 1.0 : 0.0;
+    } else {
+      gsap.to(uniforms.uTransition, {
+        value: expanded ? 1.0 : 0.0,
+        duration: duration * 0.5,
+        ease: 'power2.inOut',
+        delay: delay,
+      });
+    }
+    // setIsDirectLoad(false);
+  }, [expanded, duration, delay, isDirectLoad]);
+
   return (
     <Text
       ref={textRef}
       fontSize={0.6}
-      font='./fonts/HelveticaNowDisplay-Bold.woff'
+      font='/fonts/HelveticaNowDisplay-Bold.woff'
       anchorX={anchorX}
       anchorY='middle'
       position={position}
       onSync={handleSync}
     >
       <textMaterial
+        ref={materialRef}
         transparent
         uColour={new THREE.Color('#ebece9')}
         uOpacity={opacity}
         uFadeStart={-5.0}
         uFadeEnd={10}
+        uTransition={0.0}
+        uTransitionDuration={duration}
       />
       {text.toUpperCase()}
     </Text>

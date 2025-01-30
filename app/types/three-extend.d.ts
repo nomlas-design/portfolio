@@ -8,16 +8,26 @@ declare global {
         ref?: React.RefObject<ShaderMaterial>;
         uTexture?: any;
         uProgress?: number;
-      };
-      backgroundImageMaterial: MaterialProps & {
-        ref?: React.RefObject<ShaderMaterial>;
-        uTexture?: any;
+        uHover?: number;
+        uMouse?: any;
+        uCurveFactor?: number;
+        uClick?: number;
       };
       textMaterial: MaterialProps & {
         uColour?: Color;
         uOpacity?: number;
         uFadeStart?: number;
         uFadeEnd?: number;
+        uTransition?: number;
+        uTransitionDuration?: number;
+      };
+      backgroundMaterial: MaterialProps & {
+        uColour?: Color;
+        uTime?: number;
+      };
+      galleryMaterial: MaterialProps & {
+        uIndex?: number;
+        uTexture?: any;
       };
     }
   }

@@ -15,6 +15,10 @@ interface CarouselTextProps {
   activeIndex: number;
   wrapSpacing: number;
   opacityScale: number;
+  expandedIndex: number | null;
+  duration: number;
+  isDirectLoad: boolean;
+  setIsDirectLoad: (value: boolean) => void;
 }
 
 export default function CarouselText({
@@ -23,6 +27,10 @@ export default function CarouselText({
   activeIndex,
   wrapSpacing,
   opacityScale = 0.2,
+  expandedIndex,
+  duration,
+  isDirectLoad,
+  setIsDirectLoad,
 }: CarouselTextProps) {
   const projectArray = Object.values(projects);
   const totalItems = projectArray.length;
@@ -64,6 +72,11 @@ export default function CarouselText({
                 onWidthComputed={handleWidth}
                 opacity={textOpacity}
                 anchorX='center'
+                expanded={expandedIndex !== null}
+                duration={duration}
+                delay={0}
+                isDirectLoad={isDirectLoad}
+                setIsDirectLoad={setIsDirectLoad}
               />
             );
           })}
@@ -92,6 +105,11 @@ export default function CarouselText({
                 onWidthComputed={handleWidth}
                 opacity={textOpacity}
                 anchorX='center'
+                expanded={expandedIndex !== null}
+                duration={duration}
+                delay={0.1}
+                isDirectLoad={isDirectLoad}
+                setIsDirectLoad={setIsDirectLoad}
               />
             );
           })}
