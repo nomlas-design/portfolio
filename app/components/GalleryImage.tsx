@@ -47,6 +47,7 @@ interface GalleryImageProps {
   pos: Vector3;
   color?: string;
   index: number;
+  transitionGallery: boolean;
 }
 
 const GalleryImage = ({
@@ -54,10 +55,12 @@ const GalleryImage = ({
   pos,
   color = 'white',
   index,
+  transitionGallery,
 }: GalleryImageProps) => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const animationRef = useRef<gsap.core.Tween | null>(null);
-  const { isBack } = useTransition();
+  const { activeIndex, displayedIndex, progress, transitionDirection } =
+    useTransition();
 
   const gallery = [
     '/images/img4.jpg',
@@ -88,15 +91,13 @@ const GalleryImage = ({
   useEffect(() => {
     if (!materialRef.current) return;
 
-    // Kill any existing animation
     if (animationRef.current) {
       animationRef.current.kill();
     }
 
-    const delay =
-      0.25 + animationOrder[index as keyof typeof animationOrder] * 0.15;
+    const delay = animationOrder[index as keyof typeof animationOrder] * 0.05;
 
-    if (isBack) {
+    if (transitionDirection === 'out') {
       // Reverse animation for back transition
       animationRef.current = gsap.to(materialRef.current.uniforms.uProgress, {
         value: 0,
@@ -114,19 +115,18 @@ const GalleryImage = ({
         {
           value: 1,
           duration: 0.5,
-          delay: delay,
+          delay: delay + 0.25,
           ease: 'power2.inOut',
         }
       );
     }
 
-    // Cleanup
     return () => {
       if (animationRef.current) {
         animationRef.current.kill();
       }
     };
-  }, [index, isBack]);
+  }, [index, transitionDirection]);
 
   return (
     <mesh position={pos}>

@@ -1,7 +1,10 @@
+// backgroundShaders.ts
+
 export const backgroundVertexShader = /* glsl */ `
   precision mediump float;
   uniform float uTime;
   varying vec2 vUv;
+  
   void main() {
     vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
@@ -11,9 +14,10 @@ export const backgroundVertexShader = /* glsl */ `
 export const backgroundFragmentShader = /* glsl */ `
   precision mediump float;
   uniform float uTime;
-  uniform vec3 uColor1; // Primary red
-  uniform vec3 uColor2; // Intense orange
-  uniform vec3 uColor3; // Intense saturated red
+  uniform float uTransitionProgress;
+  uniform vec3 uColour1;
+  uniform vec3 uColour2;
+  uniform vec3 uColour3;
   varying vec2 vUv;
 
   #define GRAIN_INTENSITY 0.1
@@ -40,7 +44,7 @@ export const backgroundFragmentShader = /* glsl */ `
     vec2 fractionalCoord = fract(coord);
     fractionalCoord = fractionalCoord * fractionalCoord * (3.0 - 2.0 * fractionalCoord);
     vec2 integerCoord = floor(coord);
-    
+   
     return mix(
       mix(
         generateRandomNoise(integerCoord + vec2(0.0, 0.0)),
@@ -60,39 +64,52 @@ export const backgroundFragmentShader = /* glsl */ `
     float noiseValue = 0.0;
     float amplitude = 0.5;
     mat2 rotationMatrix = mat2(0.8, -0.6, 0.6, 0.8);
-    
+   
     for (int i = 0; i < 7; ++i) {
       noiseValue += amplitude * generatePerlinNoise(coord);
       coord = rotationMatrix * coord * vec2(1.5, 0.7);
       amplitude *= 0.5;
     }
-    
+   
     return noiseValue;
   }
 
   void main() {
     vec2 normalizedCoord = (2.0 * vUv - 1.0);
     float timeScale = uTime * 0.1;
-    
+   
     // Generate primary noise layers
     float primaryNoise = generateFractalNoise(normalizedCoord * 1.0 + timeScale);
     float secondaryNoise = generateFractalNoise(normalizedCoord * 0.2 - timeScale * 1.5 + primaryNoise);
-    
+   
     // Combine noise layers
     vec2 noiseVector = vec2(primaryNoise, secondaryNoise);
     float finalNoise = generateFractalNoise(normalizedCoord * 1.0 + noiseVector * 2.0);
-    
+   
     // Color blending with noise
-    vec3 colorOutput = mix(uColor1, uColor2, smoothstep(0.2, 0.9, finalNoise));
-    colorOutput = mix(colorOutput, uColor3, smoothstep(0.6, 1.0, finalNoise));
-    
+    vec3 colorOutput = mix(uColour1, uColour2, smoothstep(0.2, 0.9, finalNoise));
+    colorOutput = mix(colorOutput, uColour3, smoothstep(0.8, 1.0, finalNoise));
+   
+    // Enhanced color adjustments during transition
+    float transitionEffect = uTransitionProgress * 0.3;
+    colorOutput = mix(
+      colorOutput,
+      colorOutput * (1.0 + finalNoise * transitionEffect),
+      uTransitionProgress
+    );
+
+    // Add subtle vignette during transition
+    float vignette = length(normalizedCoord);
+    vignette = smoothstep(1.0, 0.0, vignette);
+    colorOutput = mix(colorOutput, colorOutput * (0.85 + vignette * 0.15), uTransitionProgress);
+   
     // Color adjustments
     colorOutput = pow(colorOutput, vec3(1.5));
     colorOutput = mix(colorOutput, colorOutput * colorOutput * (3.0 - 2.0 * colorOutput), 0.15);
-    
+   
     // Apply film grain
     colorOutput = colorOutput - generateFilmGrain(vUv) * GRAIN_INTENSITY;
-    
+   
     gl_FragColor = vec4(colorOutput, 1.0);
   }
 `;

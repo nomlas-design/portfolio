@@ -84,11 +84,7 @@ export const planeVertexShader = /* glsl */ `
     if (uActive > 0.0) {
         curveStrength = smoothstep(1.0, 0.0, uActiveProgress);
 
-        // float targetScale = uZoomScale.y; // Use the height scale
-        // float currentScale = mix(1.0, targetScale, uActiveProgress);
-        
-        // // Scale width proportionally but slightly less to fit viewport
-        // float widthScale = targetScale;
+      
         
         if (uActiveProgress > 0.5) {
           float remap = clamp((uActiveProgress - 0.5) * 2., 0.0, 1.0);
@@ -97,10 +93,6 @@ export const planeVertexShader = /* glsl */ `
                   float currentScale = mix(1.0, targetScale, remap);
         float widthScale = targetScale;
 
-                 // pos.x *= mix(1.0, widthScale, remap);
-      // pos.y *= currentScale;
-
-        // pos.x -= (1.5) * remap;
         }
     }
     
@@ -126,9 +118,9 @@ export const planeVertexShader = /* glsl */ `
     vPosition = pos;
 
     if (pos.x > 0.0) {
-    pos.x -= (1. - uOpacity) * 1.5 * pos.x;
+      pos.x -= (1. - uOpacity);
     } else {
-    pos.x -= (1. - uOpacity) * -pos.x;
+      pos.x -= (1. - uOpacity);
     }
     
     vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
@@ -177,9 +169,9 @@ export const planeFragmentShader = /* glsl */ `
     vec3 finalColor = mix(tex.rgb, bwColor, minBW + curveStrength * (1.0 - minBW));
 
     vec2 vertexUV = vUv * 2.0 - 1.0;
-    float shadowIntensity = 0.125  + 1.5 * uActiveProgress;;
+    float shadowIntensity = 0.325  + 1.5 * uActiveProgress;;
     float dist = length(vertexUV - vMouse) - 0.5 * uActiveProgress;;
-    float radius = 0.4;
+    float radius = 0.3;
     float falloff = smoothstep(radius, 1.5, dist);
     
     finalColor *= 1.0 - shadowIntensity * falloff * uHover * curveStrength * uActiveProgress;

@@ -1,5 +1,6 @@
 import { Vector2 } from 'three';
 import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 import GalleryImage from './GalleryImage';
 import { useState, useEffect } from 'react';
 import { mod } from '@/app/utils/MathUtils';
@@ -10,6 +11,8 @@ interface ProjectGalleryProps {
   planeSize: Vector2;
   prog: number;
   calculateWrapHeight: (numColumns: number, gap: number) => number;
+  isTransitioning: boolean;
+  transitionDirection: 'in' | 'out';
 }
 
 const ProjectGallery = ({
@@ -32,6 +35,9 @@ const ProjectGallery = ({
   return (
     <>
       {/* Top-left box */}
+      <Html position={[0, 0, 2]}>
+        <h1>Test</h1>
+      </Html>
       <GalleryImage
         planeSize={new THREE.Vector2(halfWidth - gap / 2, halfHeight - gap / 2)}
         pos={

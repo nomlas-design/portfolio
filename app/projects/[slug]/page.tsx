@@ -15,19 +15,11 @@ const ProjectPage = ({ params }: { params: { slug: string } }) => {
 
   return (
     <>
-      <button
-        style={{
-          position: 'absolute',
-          top: '50%',
-          right: '20px',
-          zIndex: 100,
-          fontSize: '3.5rem',
-        }}
-        onClick={handleReturn}
-        className='back-button'
-      >
-        Back
-      </button>
+      {/* <div className='wrapper'>
+        <main className='container container--project'>
+          <h1>Project Page</h1>
+        </main>
+      </div> */}
     </>
   );
 };

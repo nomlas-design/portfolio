@@ -18,9 +18,9 @@ export default function RootLayout({
     <html lang='en'>
       <body>
         <TransitionProvider>
-          <Scene />
-
           {children}
+
+          <Scene />
         </TransitionProvider>
       </body>
     </html>

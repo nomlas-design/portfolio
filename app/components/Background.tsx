@@ -1,8 +1,10 @@
-import { Text, shaderMaterial } from '@react-three/drei';
+import { shaderMaterial } from '@react-three/drei';
 import { extend, useFrame, useThree } from '@react-three/fiber';
 import { useRef, useMemo, useEffect, useState } from 'react';
 import * as THREE from 'three';
-import { useControls } from 'leva';
+import gsap from 'gsap';
+import { useTransition } from '@/app/contexts/TransitionContext';
+import { baseColours, alternativeColourSchemes } from '../config/colourSchemes';
 import {
   backgroundFragmentShader as fragmentShader,
   backgroundVertexShader as vertexShader,
@@ -14,26 +16,11 @@ interface CarouselTextLineProps {
 }
 
 const Background = ({ position, colour }: CarouselTextLineProps) => {
-  const textRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const currentAnimations = useRef<gsap.core.Tween[]>([]);
   const [size, setSize] = useState([0, 0]);
   const { viewport } = useThree();
-
-  // Add Leva controls for colors
-  const { color1, color2, color3 } = useControls('Background Colors', {
-    color1: {
-      value: '#1A1410', // Dark brown-black
-      label: 'Dark Brown-Black',
-    },
-    color2: {
-      value: '#261E17', // Slightly lighter brown-black
-      label: 'Lighter Brown-Black',
-    },
-    color3: {
-      value: '#0D0A08', // Darkest black
-      label: 'Darkest Black',
-    },
-  });
+  const { activeIndex, progress } = useTransition();
 
   useEffect(() => {
     const handleResize = () => {
@@ -43,25 +30,69 @@ const Background = ({ position, colour }: CarouselTextLineProps) => {
     return () => window.removeEventListener('resize', handleResize);
   }, [viewport, setSize]);
 
-  // Update uniforms when colors change
+  // Cleanup function for GSAP animations
+  const cleanupAnimations = () => {
+    currentAnimations.current.forEach((tween) => {
+      tween.kill();
+    });
+    currentAnimations.current = [];
+  };
+
+  // Color transition effect
+  useEffect(() => {
+    if (!materialRef.current) return;
+
+    const material = materialRef.current;
+    cleanupAnimations();
+
+    // If activeIndex is null or out of bounds, transition to base colours
+    const targetColours =
+      activeIndex !== null ? alternativeColourSchemes[0].colours : baseColours;
+
+    // Create new animations
+    const colour1Tween = gsap.to(material.uniforms.uColour1.value, {
+      x: targetColours.colour1.x,
+      y: targetColours.colour1.y,
+      z: targetColours.colour1.z,
+      duration: 1.5,
+      ease: 'power2.inOut',
+    });
+
+    const colour2Tween = gsap.to(material.uniforms.uColour2.value, {
+      x: targetColours.colour2.x,
+      y: targetColours.colour2.y,
+      z: targetColours.colour2.z,
+      duration: 1.5,
+      ease: 'power2.inOut',
+    });
+
+    const colour3Tween = gsap.to(material.uniforms.uColour3.value, {
+      x: targetColours.colour3.x,
+      y: targetColours.colour3.y,
+      z: targetColours.colour3.z,
+      duration: 1.5,
+      ease: 'power2.inOut',
+    });
+
+    // Store current animations for cleanup
+    currentAnimations.current = [colour1Tween, colour2Tween, colour3Tween];
+
+    return () => {
+      cleanupAnimations();
+    };
+  }, [activeIndex]);
 
   const BackgroundMaterial = useMemo(() => {
     return shaderMaterial(
       {
-        uColour: new THREE.Color('#ebece9'),
         uTime: 0,
-        uColor1: new THREE.Vector3(0.918, 0.267, 0.122), // Primary red #EA441F
-        uColor2: new THREE.Vector3(1.0, 0.486, 0.333), // More intense orange #FF7C55
-        uColor3: new THREE.Vector3(1.0, 0.392, 0.255),
+        uColour1: baseColours.colour1.clone(),
+        uColour2: baseColours.colour2.clone(),
+        uColour3: baseColours.colour3.clone(),
+        uTransitionProgress: 0,
       },
       vertexShader,
-      fragmentShader,
-      (material) => {
-        if (material) {
-          // material.transparent = true;
-          // material.side = THREE.DoubleSide;
-        }
-      }
+      fragmentShader
     );
   }, []);
 
@@ -70,6 +101,7 @@ const Background = ({ position, colour }: CarouselTextLineProps) => {
   useFrame((state, delta) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value += delta;
+      materialRef.current.uniforms.uTransitionProgress.value = progress.value;
     }
   });
 

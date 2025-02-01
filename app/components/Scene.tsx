@@ -55,7 +55,7 @@ const Scene = () => {
   if (!isReady) return null; // Gate rendering until we have final values
 
   return (
-    <div style={{ width: '100%', height: '100vh' }}>
+    <div className='scene'>
       <Canvas
         gl={{
           alpha: true,
